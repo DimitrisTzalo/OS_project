@@ -57,14 +57,32 @@ void db_close(DB *self)
 int db_add(DB* self, Variant* key, Variant* value)
 {
     pthread_mutex_lock(&compaction_mutex); //GIATI TO IF KRISIMI PERIOXH GIA NA MHN KANEI SEG.FAULT giati gia ka8e thread prepei na elegxetai an tthelei compaction h mnhmh
-
+    
+   
+    
     if (memtable_needs_compaction(self->memtable))
     {
         INFO("Starting compaction of the memtable after %d insertions and %d deletions",
              self->memtable->add_count, self->memtable->del_count);
+
+        pthread_mutex_lock(&readwrite_mutex);
+        while(writers == 1){
+            pthread_cond_wait(&readwrite_cond,&readwrite_mutex);
+        }
+        writers ++;
+        pthread_mutex_unlock(&readwrite_mutex);
         sst_merge(self->sst, self->memtable);
+
         memtable_reset(self->memtable);
         
+
+        /*The writers need to be decreased when the memory is reset because the compaction process (
+        or memory reset) is a critical section that temporarily blocks other writers from proceeding. 
+        During this time, the writers counter is incremented to indicate that a writer is actively performing work.
+        Once the compaction or reset is complete, the writers counter must be decremented to signal 
+        that the writer has finished its task, allowing other writers or readers to proceed.
+        */
+
         // signal any waiting writers
         pthread_mutex_lock(&readwrite_mutex);
         writers --;
@@ -72,6 +90,8 @@ int db_add(DB* self, Variant* key, Variant* value)
         pthread_cond_broadcast(&readwrite_cond);
         pthread_mutex_unlock(&readwrite_mutex);
     }
+
+    int result = memtable_add(self->memtable, key, value);
 
     pthread_mutex_unlock(&compaction_mutex);
 
@@ -86,7 +106,7 @@ int db_add(DB* self, Variant* key, Variant* value)
 
 
 
-    int result = memtable_add(self->memtable, key, value);
+    
     //ksypna tous ypoloipous
     pthread_mutex_lock(&readwrite_mutex);
     writers --;
@@ -107,11 +127,14 @@ int db_get(DB* self, Variant* key, Variant* value)
         pthread_cond_wait(&readwrite_cond, &readwrite_mutex);
     }
     pthread_mutex_unlock(&readwrite_mutex);
-    int result = memtable_get(self->memtable->list, key, value);
+    
+    int result = memtable_get(self->memtable->list, key, value); //kaneis read sthn mnhmh
     pthread_mutex_lock(&readwrite_mutex);
     readers --;
-    if(readers == 0)
+    if(readers == 0){
         pthread_cond_broadcast(&readwrite_cond);
+    }
+        
     pthread_mutex_unlock(&readwrite_mutex);
     if (result == 1)
         return 1;

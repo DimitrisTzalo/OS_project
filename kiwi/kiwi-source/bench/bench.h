@@ -32,5 +32,8 @@ typedef struct { // thread arguments
 
 
 void multi_write_test(long int count, int r, int num_threads);
-void *_write_thread(void *arg);
+void *_thread_write(void * arg);
+void multi_read_test(long int count, int r, int num_threads);
+void *_thread_read(void * arg);
+void readwrite_test (long int count, int r, int threads, int write_percentage);
 

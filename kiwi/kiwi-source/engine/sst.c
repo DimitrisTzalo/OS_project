@@ -578,6 +578,7 @@ void sst_merge(SST* self, MemTable* mem)
 {
     pthread_mutex_lock(&self->cv_lock);
 
+
     while (self->merge_state != 0)
     {
         pthread_mutex_unlock(&self->cv_lock);

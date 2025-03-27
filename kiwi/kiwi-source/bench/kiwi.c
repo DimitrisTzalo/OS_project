@@ -19,6 +19,8 @@ int write_ceil(double num) {
     return inum;
 }
 
+
+
 void _write_test(long int count, int r)
 {
 	int i;
@@ -229,7 +231,7 @@ void *thread_read(void *arg) {
     double cost;
     long long start, end;
     Variant sk, sv;
-    int local_found = 0;
+    //int local_found = 0;
 
     char key[KSIZE + 1];
     char sbuf[1024];
@@ -248,11 +250,17 @@ void *thread_read(void *arg) {
         sk.length = KSIZE;
         sk.mem = key;
 		
+		pthread_mutex_lock(&read_mutex); // lock the statistics mutex for reading	
+		//found += local_found;
+	
+
 		
 		ret = db_get(data->db, &sk, &sv);
         if (ret) {
-            local_found++;
+            found++;
         }
+
+		pthread_mutex_unlock(&read_mutex);
 		
         if ((i % 10000) == 0) {
             fprintf(stderr, "random read finished %d ops%30s\r", 
@@ -266,10 +274,7 @@ void *thread_read(void *arg) {
     end = get_ustime_sec();
     cost = end - start;
 
-	pthread_mutex_lock(&read_mutex); // lock the statistics mutex for reading	
-	found += local_found;
-	pthread_mutex_unlock(&read_mutex);
-
+	
     
     
 
@@ -321,6 +326,17 @@ void readwrite_test (long int count, int r, int threads, int write_percentage) {
 	double wthreads = write_ceil((double)(threads * write_percentage) / 100.0); // calculate the number of write threads
 	int write_threads = (int)wthreads;
 	int read_threads = threads - write_threads; // calculate the number of read threads
+
+	if (write_threads == 0) {
+		write_threads = 1;
+		read_threads--;
+	}
+
+	if(read_threads == 0) {
+		read_threads = 1;
+		write_threads--;
+	}
+
 	thread_data_t *write_args = malloc(sizeof(thread_data_t) * write_threads);   // array of structs data (bench.h) to pass as arguments
 	thread_data_t *read_args = malloc(sizeof(thread_data_t) * read_threads);   ;   // array of structs data (bench.h) to pass as arguments
 	pthread_t* write_tid = malloc(write_threads * sizeof(pthread_t));
@@ -384,12 +400,13 @@ void readwrite_test (long int count, int r, int threads, int write_percentage) {
 		pthread_join(read_tid[i], NULL);
 	}
 	
+	db_close(db);            // close the database
 	end_read = get_ustime_sec();            // calculate end time of the operation
 	read_cost = end_read - start_read;            // calculate operating time
 
 	
 	cost = write_cost + read_cost;            // calculate operating time
-	db_close(db);            // close the database
+	
 
 	printf(LINE);
     printf("|Random-Multi-Thread-ReadWrite (done:%ld): %.6f sec/op; %.1f writes&reads/sec(estimated); cost:%.3f(sec); Threads: %d\n",
