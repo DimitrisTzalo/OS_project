@@ -1,4 +1,4 @@
-# Multithreaded Storage Engine - MYY601 Lab (Spring 2025)
+# MYY601 Lab (Spring 2025)
 
 ## Overview
 This project is splitted in **Lab 1** and **Lab 2** of the course **MYY601 - Operating Systems** at the University of Ioannina.  
