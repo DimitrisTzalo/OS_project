@@ -86,15 +86,7 @@ Our experiments showed:
 - Increasing threads improves **read throughput** significantly.
 - **Write throughput** improvement is limited due to serialization requirements.
 - Combined workloads (reads and writes) show balanced behavior depending on thread distribution.
-
-## How to Test
-- Use GDB for debugging:
-  ```bash
-  gdb kiwi-bench
-  ```
-- Use breakpoints (`break`), thread inspection (`info thread`), and backtrace (`bt`) to verify thread behavior.
-- Measure the execution time and success rate of operations.
-
+  
 ## Documentation
 Detailed technical explanations and code walkthroughs are available in [Report.pdf](./Report.pdf).
 
