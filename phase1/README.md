@@ -15,7 +15,7 @@ The assignment required the implementation of **multithreaded** `add` and `get` 
 - **Course**: MYY601 - Operating Systems
 - **Instructor**: Mr. Stergios Anastasiadis
 - **Semester Spring 2025** 
-- ** University of Ioannina
+- **University of Ioannina**
 
 ## Contributors
 - Vasiliki-Eleni Tsoumani
